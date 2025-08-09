@@ -1,0 +1,4 @@
+reporter.log
+.env
+.venv
+__pycache__
