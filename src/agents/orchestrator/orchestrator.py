@@ -4,11 +4,13 @@ from random import uniform
 from typing import TypedDict, List, Dict, Any, Optional
 from langchain_ollama import ChatOllama
 from langgraph.graph import StateGraph
+from src.agents.reporter.reporter import Reporter
 from src.agents.retriever.retriever import Retriever
 from src.agents.planner.planner import Planner
 from src.agents.planner.models.output import Section
 from .models.output import ReportType, OrchestratorOutput
 from .utils.prompts import PROCESS_PROMPT_PROMPT
+from src.agents.writer.models.content import SectionContent
 
 class State(TypedDict):
     prompt: str
@@ -20,6 +22,8 @@ class State(TypedDict):
     plan_chunks: List[str]
 
     plan_sections: List[Section]
+
+    report_content: List[SectionContent]
 
 class Orchestrator:
     def __init__(self, ollama_model: str,
@@ -135,14 +139,32 @@ class Orchestrator:
                            plan_chunks=state["plan_chunks"])
 
         return {
-            "sections": plan_sections
+            "plan_sections": plan_sections
         }
 
     def _main_retriever(self, state: State) -> Dict[str, Any]:
-        pass
+        """
+        Retrieves documents/chunks for each section of the plan and formats it
+        """
+        sections = state["plan_sections"].copy()
+
+        retriever = Retriever(collection="documents", mode="sectioned")
+        docs = retriever.run(sections=sections, queries=[])
+
+        for section in sections:
+            section.documents = docs.get(section.name, [])
+
+        return {
+            "plan_sections": sections
+        }
 
     def _reporter(self, state: State) -> Dict[str, Any]:
-        pass
+        """
+        """
+        reporter = Reporter()
+        report_content = reporter.run(sections=state["plan_sections"])
+
+        state["report_content"] = report_content
 
     def run(self, prompt: str):
         """
