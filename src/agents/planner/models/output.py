@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, Field
 
 class Section(BaseModel):
@@ -6,6 +6,7 @@ class Section(BaseModel):
     expected_format: List[str] = Field(min_length=2, max_length=3, description="Section format can be narrative, bullets or table. And can be combined")
     goal: str = Field(..., description="Section goal")
     queries: List[str] = Field(..., min_length=3, max_length=5, description="Queries to retrieve section data")
+    documents: Optional[List[str]] = None
 
 class PlannerOutput(BaseModel):
     sections: List[Section] = Field(..., min_length=4, max_length=20, description="Sections that will be part of the final report")
