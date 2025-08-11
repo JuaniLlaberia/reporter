@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import List, Dict, TypedDict, Any, Optional, Literal
 from langgraph.graph import StateGraph
 from src.chromadb.client import ChromaDBClient
+from src.agents.planner.models.output import Section
 
 class Mode(str, Enum):
     SINGLE="single"
@@ -15,7 +16,7 @@ class State(TypedDict):
     queries: Optional[List[str]]
     documents: List[Dict[str, Any]]
     mode: Mode
-    sections: Optional[List[Dict[str, Any]]]
+    sections: Optional[List[Section]]
     processed_documents: Dict[str, List[Dict[str, Any]]]
 
 class Retriever:
@@ -91,8 +92,8 @@ class Retriever:
         all_documents = []
 
         for section in state.get("sections", []):
-            section_name = section["name"]
-            section_queries = section["queries"]
+            section_name = section.name
+            section_queries = section.queries
             logging.info(f"Processing section '{section_name}' with {len(section_queries)} queries")
 
             section_docs = self._run_parallel_queries(queries=section_queries, section_name=section_name)
@@ -194,7 +195,7 @@ class Retriever:
         normalized_content = content.strip().lower()
         return hashlib.md5(normalized_content.encode()).hexdigest()
 
-    def run(self, queries: Optional[List[str]], sections: Optional[List[Dict[str, Any]]]) -> Dict[str, List[Dict[str, Any]]]:
+    def run(self, queries: Optional[List[str]], sections: Optional[List[Section]]) -> Dict[str, List[Dict[str, Any]]]:
         """
         Run retriever agent
         """
