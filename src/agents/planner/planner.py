@@ -120,7 +120,7 @@ class Planner:
                     }
 
             logging.info(f"Plan evaluation finished with a {evaluation_data['score']} score")
-            return {"score": evaluation_data["score"]}
+            return {**evaluation_data}
 
         except Exception as e:
             logging.error(f"Failed to evaluate plan: {e}")
