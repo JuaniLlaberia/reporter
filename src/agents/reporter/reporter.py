@@ -40,6 +40,8 @@ class Reporter:
         """
         Assign a worker to each section
         """
+        logging.info(f"Sending {len(state['sections'])} workers to process sections")
+
         return [Send("section_processor", {
             "section": s,
             "section_content": SectionContent(section_title="", content=[]),
