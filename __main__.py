@@ -11,7 +11,7 @@ def create_app():
 
     return app
 
-logging.basicConfig(filename='analyzer.log', level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
+logging.basicConfig(filename='reporter.log', level=logging.INFO, format='%(asctime)s %(levelname)s:%(message)s')
 
 def main():
     """
