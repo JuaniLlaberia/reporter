@@ -65,6 +65,7 @@ class Retriever:
         Returns:
             mode: 'single' | 'sectioned'
         """
+        logging.info(f"Running retriever in {self.mode} mode")
         return state["mode"]
 
     def _single_retrieve(self, state: State) -> Dict[str, any]:
@@ -216,7 +217,6 @@ class Retriever:
                 processed_documents=[],
             )
 
-        logging.info(f"Running retriever in {self.mode} mode")
         result = self.graph.invoke(initial_state)
 
         return result["processed_documents"]
