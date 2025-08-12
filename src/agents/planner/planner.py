@@ -66,7 +66,7 @@ class Planner:
 
         MAX_RETRIES = 3
         for attempt in range(MAX_RETRIES + 1):
-            logging.info(f"Running attempt #{attempt + 1}/{MAX_RETRIES}")
+            logging.info(f"Generating plan: Attempt #{attempt + 1}/{MAX_RETRIES}")
             try:
                 response = chain.invoke({
                     "topic": state["topic"],
@@ -86,7 +86,7 @@ class Planner:
                 return {**plan_data}
 
             except Exception as e:
-                logging.error(f"Attempt {attempt + 1} failed: {e}")
+                logging.error(f"Attempt {attempt + 1} to generate plan failed: {e}")
                 if attempt < MAX_RETRIES:
                     delay = 1 * (2 ** attempt) + uniform(0, 1)
                     logging.info(f"Waiting {delay}s before next attempt")
@@ -104,6 +104,7 @@ class Planner:
         structured_llm = self.llm.with_structured_output(EvaluationOutput)
         chain = EVALUATE_PLAN_PROMPT | structured_llm
 
+        logging.info(f"Running plan evaluation...")
         try:
             response = chain.invoke({"sections": sections})
 
@@ -123,6 +124,10 @@ class Planner:
             return {**evaluation_data}
 
         except Exception as e:
+            evaluation_data = {
+                    "score": 0.0,
+                    "improvements": []
+                    }
             logging.error(f"Failed to evaluate plan: {e}")
             return {**evaluation_data}
 
