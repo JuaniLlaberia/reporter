@@ -11,6 +11,7 @@ from src.agents.planner.models.output import Section
 from .models.output import ReportType, OrchestratorOutput
 from .utils.prompts import PROCESS_PROMPT_PROMPT
 from src.agents.writer.models.content import SectionContent
+from src.agents.concluder.concluder import Concluder
 
 class State(TypedDict):
     prompt: str
@@ -23,7 +24,10 @@ class State(TypedDict):
 
     plan_sections: List[Section]
 
+    title: str
     report_content: List[SectionContent]
+    introduction: str
+    conclusion: str
 
 class Orchestrator:
     def __init__(self, ollama_model: str,
@@ -76,7 +80,7 @@ class Orchestrator:
 
         MAX_RETRIES = 3
         for attempt in range(MAX_RETRIES + 1):
-            logging.info(f"Running attempt #{attempt + 1}/{MAX_RETRIES}")
+            logging.info(f"Processing prompt: Attempt #{attempt + 1}/{MAX_RETRIES}")
             try:
                 response = chain.invoke({
                     "prompt": prompt
@@ -102,10 +106,10 @@ class Orchestrator:
                 return {**prompt_data}
 
             except Exception as e:
-                logging.error(f"Attempt {attempt + 1} failed: {e}")
+                logging.error(f"Attempt {attempt + 1} to process prompt failed: {e}")
                 if attempt < MAX_RETRIES:
                     delay = 1 * (2 ** attempt) + uniform(0, 1)
-                    logging.info(f"Waiting {delay}s before next attempt")
+                    logging.info(f"Waiting {delay}s before next attempt to process prompt")
                     sleep(delay)
                 else:
                     logging.error(f"Failed to process user prompt: {e}")
@@ -160,11 +164,23 @@ class Orchestrator:
 
     def _reporter(self, state: State) -> Dict[str, Any]:
         """
+        Generate title, introduction, content and conclusion for report
         """
         reporter = Reporter()
         report_content = reporter.run(sections=state["plan_sections"])
 
-        state["report_content"] = report_content
+        concluder = Concluder(
+             ollama_model="gemma3:4b",
+            ollama_base_url="http://localhost:11434"
+        )
+        title, introduction, conclusion = concluder.run(content=report_content)
+
+        return {
+            "title": title,
+            "introduction": introduction,
+            "report_content": report_content,
+            "conclusion": conclusion
+        }
 
     def run(self, prompt: str):
         """
