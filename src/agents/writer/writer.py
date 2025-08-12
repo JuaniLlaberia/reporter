@@ -133,6 +133,10 @@ class Writter:
             return {**evaluation_data, "revision_count": state["revision_count"] + 1}
 
         except Exception as e:
+            evaluation_data = {
+                    "score": 0.0,
+                    "improvements": []
+            }
             logging.error(f"Failed to evaluate content for {state['section'].name} section: {e}")
             return {**evaluation_data, "revision_count": state["revision_count"] + 1}
 
