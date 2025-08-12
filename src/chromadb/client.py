@@ -1,3 +1,4 @@
+import logging
 import chromadb
 from typing import List
 
@@ -7,7 +8,9 @@ class ChromaDBClient:
 
     def retrieve_docs(self, queries: List[str], collection_name: str, include: List[str], n_results: int = 5):
         """
+        Function to retrieve documents from chromaDB
         """
+        logging.info(f"Retrieving documents with '{include}' fields for {collection_name} collection including {n_results} per query")
         try:
             collection = self.client.get_collection(
                 name=collection_name,
@@ -21,5 +24,5 @@ class ChromaDBClient:
 
             return results
         except Exception as e:
-            print(e)
+            logging.error(f"Failed to retrieve documents: {e}")
             raise e
