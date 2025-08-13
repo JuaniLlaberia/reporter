@@ -1,8 +1,6 @@
-import logging
-from time import sleep
-from random import uniform
 from typing import TypedDict, List, Dict, Any, Optional
 from langchain_ollama import ChatOllama
+from pydantic import BaseModel
 from langgraph.graph import StateGraph
 from src.agents.reporter.reporter import Reporter
 from src.agents.retriever.retriever import Retriever
@@ -12,6 +10,7 @@ from .models.output import ReportType, OrchestratorOutput
 from .utils.prompts import PROCESS_PROMPT_PROMPT
 from src.agents.writer.models.content import SectionContent
 from src.agents.concluder.concluder import Concluder
+from src.utils.decorators.retry import retry_with_backoff
 
 class State(TypedDict):
     prompt: str
@@ -69,51 +68,42 @@ class Orchestrator:
 
         return graph.compile()
 
+    @retry_with_backoff()
     def _process_prompt(self, state: State) -> Dict[str, Any]:
         """
         Extract key information from user prompt
         """
-        prompt = state["prompt"]
-
         structured_llm = self.llm.with_structured_output(OrchestratorOutput)
         chain = PROCESS_PROMPT_PROMPT | structured_llm
 
-        MAX_RETRIES = 3
-        for attempt in range(MAX_RETRIES + 1):
-            logging.info(f"Processing prompt: Attempt #{attempt + 1}/{MAX_RETRIES}")
-            try:
-                response = chain.invoke({
-                    "prompt": prompt
+        response = chain.invoke({
+                    "prompt": state["prompt"]
                 })
+        prompt_data = self._extract_prompt_data(response=response)
 
-                if isinstance(response, OrchestratorOutput):
-                    prompt_data = {
-                        "topic": response.topic,
-                        "focus_keys": response.focus_keys,
-                        "type": response.type,
-                        "plan_queries": response.plan_queries,
-                    }
-                else:
-                    response_data = response.model_dump()
-                    prompt_data = {
-                        "topic": response_data.get("topic"),
-                        "focus_keys": response_data.get("focus_keys"),
-                        "type": response_data.get("type"),
-                        "plan_queries": response_data.get("plan_queries"),
-                    }
+        return {**prompt_data}
 
-                logging.info("Prompt was processed successfully")
-                return {**prompt_data}
+    def _extract_prompt_data(self, response: dict | BaseModel) -> Dict[str, Any]:
+        """
+        Helper method to extract data from response based on the type
+        """
+        if isinstance(response, OrchestratorOutput):
+            prompt_data = {
+                "topic": response.topic,
+                "focus_keys": response.focus_keys,
+                "type": response.type,
+                "plan_queries": response.plan_queries,
+            }
+        else:
+            response_data = response.model_dump()
+            prompt_data = {
+                "topic": response_data.get("topic"),
+                "focus_keys": response_data.get("focus_keys"),
+                "type": response_data.get("type"),
+                "plan_queries": response_data.get("plan_queries"),
+            }
 
-            except Exception as e:
-                logging.error(f"Attempt {attempt + 1} to process prompt failed: {e}")
-                if attempt < MAX_RETRIES:
-                    delay = 1 * (2 ** attempt) + uniform(0, 1)
-                    logging.info(f"Waiting {delay}s before next attempt to process prompt")
-                    sleep(delay)
-                else:
-                    logging.error(f"Failed to process user prompt: {e}")
-                    raise e
+        return prompt_data
 
     def _initial_retriever(self, state: State) -> Dict[str, Any]:
         """
@@ -175,6 +165,8 @@ class Orchestrator:
         )
         title, introduction, conclusion = concluder.run(content=report_content)
 
+        print("Intro", introduction)
+
         return {
             "title": title,
             "introduction": introduction,
@@ -196,11 +188,3 @@ class Orchestrator:
         )
 
         self.graph.invoke(initial_state)
-
-x = Orchestrator(
-    ollama_model="gemma3:4b",
-    ollama_base_url="http://localhost:11434"
-)
-
-x.run("What are the return policies?")
-# x.run("Generate a detailed report about 2024 sales, focusing on revenue and losses")

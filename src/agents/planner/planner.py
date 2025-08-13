@@ -1,12 +1,11 @@
 import logging
-from time import sleep
-from random import uniform
 from typing import TypedDict, List, Literal, Dict, Any, Optional
 from langgraph.graph import StateGraph, END
 from langchain_ollama import ChatOllama
 from .models.output import Section, PlannerOutput, EvaluationOutput
 from .utils.prompts import GENERATE_PLAN_PROMPT, EVALUATE_PLAN_PROMPT
 from src.agents.orchestrator.models.output import ReportType
+from src.utils.decorators.retry import retry_with_backoff
 
 class State(TypedDict):
     sections: List[Section]
@@ -57,6 +56,7 @@ class Planner:
 
         return graph.compile()
 
+    @retry_with_backoff()
     def _plan_generator(self, state: State) -> Dict[str, Any]:
         """
         Generate report plan from information
@@ -64,11 +64,7 @@ class Planner:
         structured_llm = self.llm.with_structured_output(PlannerOutput)
         chain = GENERATE_PLAN_PROMPT | structured_llm
 
-        MAX_RETRIES = 3
-        for attempt in range(MAX_RETRIES + 1):
-            logging.info(f"Generating plan: Attempt #{attempt + 1}/{MAX_RETRIES}")
-            try:
-                response = chain.invoke({
+        response = chain.invoke({
                     "topic": state["topic"],
                     "focus_keys": state["focus_keys"],
                     "type": state["type"],
@@ -76,60 +72,37 @@ class Planner:
                     "improvements": state["improvements"]
                 })
 
-                if isinstance(response, PlannerOutput):
-                    plan_data = {"sections": response.sections}
-                else:
-                    response_data = response.model_dump()
-                    plan_data = {"sections": response_data.get("sections")}
+        if isinstance(response, PlannerOutput):
+            plan_data = {"sections": response.sections}
+        else:
+            response_data = response.model_dump()
+            plan_data = {"sections": response_data.get("sections")}
 
-                logging.info("Plan was generated successfully")
-                return {**plan_data}
+        return {**plan_data}
 
-            except Exception as e:
-                logging.error(f"Attempt {attempt + 1} to generate plan failed: {e}")
-                if attempt < MAX_RETRIES:
-                    delay = 1 * (2 ** attempt) + uniform(0, 1)
-                    logging.info(f"Waiting {delay}s before next attempt")
-                    sleep(delay)
-                else:
-                    logging.error(f"Failed to generate plan: {e}")
-                    raise e
-
+    @retry_with_backoff()
     def _evaluate_plan(self, state: State) -> Dict[str, Any]:
         """
         Evaluates plan and generates a score
         """
-        sections = state["sections"]
-
         structured_llm = self.llm.with_structured_output(EvaluationOutput)
         chain = EVALUATE_PLAN_PROMPT | structured_llm
 
-        logging.info(f"Running plan evaluation...")
-        try:
-            response = chain.invoke({"sections": sections})
+        response = chain.invoke({"sections": state["sections"]})
 
-            if isinstance(response, EvaluationOutput):
-                evaluation_data = {
-                    "score": response.score,
-                    "improvements": response.improvements
-                    }
-            else:
-                response_data = response.model_dump()
-                evaluation_data = {
-                    "score": response_data.get("score"),
-                    "improvements": response_data.get("improvements")
-                    }
-
-            logging.info(f"Plan evaluation finished with a {evaluation_data['score']} score")
-            return {**evaluation_data}
-
-        except Exception as e:
+        if isinstance(response, EvaluationOutput):
             evaluation_data = {
-                    "score": 0.0,
-                    "improvements": []
-                    }
-            logging.error(f"Failed to evaluate plan: {e}")
-            return {**evaluation_data}
+                "score": response.score,
+                "improvements": response.improvements
+                }
+        else:
+            response_data = response.model_dump()
+            evaluation_data = {
+                "score": response_data.get("score"),
+                "improvements": response_data.get("improvements")
+                }
+
+        return {**evaluation_data}
 
     def _validate_plan(self, state: State) -> Literal["continue", "end"]:
         """

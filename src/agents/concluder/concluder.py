@@ -1,12 +1,11 @@
 import logging
-from random import uniform
-from time import sleep
 from typing import TypedDict, List, Literal, Dict, Any
 from langchain_ollama import ChatOllama
 from langgraph.graph import StateGraph, END
 from src.agents.writer.models.content import SectionContent
 from .models.output import EvaluationOutput, ConclusionOutput, IntroductionOutput
 from .utils.prompts import EVALUATE_CONCLUDER_PROMPT, GENERATE_CONCLUSION_PROMPT, GENERATE_INTRODUCTION_PROMPT
+from src.utils.decorators.retry import retry_with_backoff
 
 class State(TypedDict):
     content: List[SectionContent]
@@ -59,6 +58,7 @@ class Concluder:
 
         return graph.compile()
 
+    @retry_with_backoff()
     def _generate_conclusion(self, state: State) -> Dict[str, Any]:
         """
         Generate conclusion from content data
@@ -66,34 +66,20 @@ class Concluder:
         structured_llm = self.llm.with_structured_output(ConclusionOutput)
         chain = GENERATE_CONCLUSION_PROMPT | structured_llm
 
-        MAX_RETRIES = 3
-        for attempt in range(MAX_RETRIES + 1):
-            logging.info(f"Running attempt #{attempt + 1}/{MAX_RETRIES} in conclusion generator")
-            try:
-                response = chain.invoke({
+        response = chain.invoke({
                     "content": state["content"],
                     "improvements": state["improvements"]
                 })
 
-                if isinstance(response, ConclusionOutput):
-                    plan_data = {"conclusion": response.conclusion}
-                else:
-                    response_data = response.model_dump()
-                    plan_data = {"conclusion": response_data.get("conclusion")}
+        if isinstance(response, ConclusionOutput):
+            conclusion_data = {"conclusion": response.conclusion}
+        else:
+            response_data = response.model_dump()
+            conclusion_data = {"conclusion": response_data.get("conclusion")}
 
-                logging.info("Conclusion was generated successfully")
-                return {**plan_data}
+        return {**conclusion_data}
 
-            except Exception as e:
-                logging.error(f"Attempt {attempt + 1} (in conclusion generation) failed: {e}")
-                if attempt < MAX_RETRIES:
-                    delay = 1 * (2 ** attempt) + uniform(0, 1)
-                    logging.info(f"Waiting {delay}s before next attempt")
-                    sleep(delay)
-                else:
-                    logging.error(f"Failed to generate conslusion: {e}")
-                    raise e
-
+    @retry_with_backoff()
     def _generate_introduction(self, state: State) -> Dict[str, Any]:
         """
         Generate introduction from content data and conclusion
@@ -101,41 +87,27 @@ class Concluder:
         structured_llm = self.llm.with_structured_output(IntroductionOutput)
         chain = GENERATE_INTRODUCTION_PROMPT | structured_llm
 
-        MAX_RETRIES = 3
-        for attempt in range(MAX_RETRIES + 1):
-            logging.info(f"Running attempt #{attempt + 1}/{MAX_RETRIES} in introduction generator")
-            try:
-                response = chain.invoke({
+        response = chain.invoke({
                     "content": state["content"],
                     "conclusion": state["conclusion"],
                     "improvements": state["improvements"]
                 })
 
-                if isinstance(response, IntroductionOutput):
-                    plan_data = {
-                        "title": response.title,
-                        "introduction": response.introduction,
-                    }
-                else:
-                    response_data = response.model_dump()
-                    plan_data = {
-                        "title": response_data.get("title"),
-                        "introduction": response_data.get("introduction")
-                    }
+        if isinstance(response, IntroductionOutput):
+            introduction_data = {
+                "title": response.title,
+                "introduction": response.introduction,
+            }
+        else:
+            response_data = response.model_dump()
+            introduction_data = {
+                "title": response_data.get("title"),
+                "introduction": response_data.get("introduction")
+            }
 
-                logging.info("Introduction was generated successfully")
-                return {**plan_data}
+        return {**introduction_data}
 
-            except Exception as e:
-                logging.error(f"Attempt {attempt + 1} (in introduction) failed: {e}")
-                if attempt < MAX_RETRIES:
-                    delay = 1 * (2 ** attempt) + uniform(0, 1)
-                    logging.info(f"Waiting {delay}s before next attempt")
-                    sleep(delay)
-                else:
-                    logging.error(f"Failed to generate introduction: {e}")
-                    raise e
-
+    @retry_with_backoff()
     def _validate_results(self, state: State) -> Dict[str, Any]:
         """
         Validates the generated introduction and conclusion
@@ -143,39 +115,28 @@ class Concluder:
         structured_llm = self.llm.with_structured_output(EvaluationOutput)
         chain = EVALUATE_CONCLUDER_PROMPT | structured_llm
 
-        try:
-            response = chain.invoke({
+        response = chain.invoke({
                 "title": state["title"],
                 "introduction": state["introduction"],
                 "conclusion": state["conclusion"],
                 "content": state["content"]
             })
 
-            if isinstance(response, EvaluationOutput):
-                evaluation_data = {
-                    "score": response.score,
-                    "sections_to_improve": response.sections_to_improve,
-                    "improvements": response.improvements
-                    }
-            else:
-                response_data = response.model_dump()
-                evaluation_data = {
-                    "score": response_data.get("score"),
-                    "sections_to_improve": response_data.get("sections_to_improve"),
-                    "improvements": response_data.get("improvements")
-                    }
-
-            logging.info(f"Plan evaluation finished with a {evaluation_data['score']} score")
-            return {**evaluation_data}
-
-        except Exception as e:
+        if isinstance(response, EvaluationOutput):
             evaluation_data = {
-                    "score": 0.0,
-                    "sections_to_improve": ["conclusion", "introduction"],
-                    "improvements": []
-                    }
-            logging.error(f"Failed to evaluate plan: {e}")
-            return {**evaluation_data}
+                "score": response.score,
+                "sections_to_improve": response.sections_to_improve,
+                "improvements": response.improvements
+                }
+        else:
+            response_data = response.model_dump()
+            evaluation_data = {
+                "score": response_data.get("score"),
+                "sections_to_improve": response_data.get("sections_to_improve"),
+                "improvements": response_data.get("improvements")
+                }
+
+        return {**evaluation_data}
 
     def _validate_router(self, state: State) -> Literal["continue_conclusion",
                                                         "continue_introduction",

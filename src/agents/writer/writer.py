@@ -3,6 +3,7 @@ from typing import TypedDict, List, Literal, Dict, Any
 from langgraph.graph import StateGraph, END
 from langchain_ollama import ChatOllama
 from src.agents.planner.models.output import Section
+from src.utils.decorators.retry import retry_with_backoff
 from .models.content import SectionContent
 from .models.output import WriterOutput, ValidatorOutput
 from .utils.prompts import EVALUATE_CONTENT_PROMPT, GENERATE_SECTION_CONTENT_PROMPT
@@ -58,6 +59,7 @@ class Writter:
 
         return graph.compile()
 
+    @retry_with_backoff()
     def _section_writer(self, state: State) -> Dict[str, Any]:
         """
         Generate section content from section data
@@ -67,8 +69,7 @@ class Writter:
         structured_llm = self.llm.with_structured_output(WriterOutput)
         chain = GENERATE_SECTION_CONTENT_PROMPT | structured_llm
 
-        try:
-            response = chain.invoke({
+        response = chain.invoke({
                 "name": state["section"].name,
                 "goal": state["section"].goal,
                 "documents": state["section"].documents,
@@ -76,69 +77,51 @@ class Writter:
                 "improvements": state["improvements"]
             })
 
-            if isinstance(response, WriterOutput):
-                content_data = {
-                    "section_title": response.section_title,
-                    "section_content": response.section_content
-                    }
-            else:
-                response_data = response.model_dump()
-                content_data = {
-                    "section_title": response_data.get("section_title"),
-                    "section_content": response_data.get("section_content")
-                    }
+        if isinstance(response, WriterOutput):
+            content_data = {
+                "section_title": response.section_title,
+                "section_content": response.section_content
+                }
+        else:
+            response_data = response.model_dump()
+            content_data = {
+                "section_title": response_data.get("section_title"),
+                "section_content": response_data.get("section_content")
+                }
 
-            logging.info(f"Content generation for {state['section'].name} section was finished")
-            return {"section_content": content_data}
+        return {"section_content": content_data}
 
-        except Exception as e:
-            logging.error(f"Failed to generate content for {state['section'].name} section: {e}")
-            return {"section_content": {
-                "section_title": "",
-                "section_content": []
-            }}
-
+    @retry_with_backoff()
     def _section_validator(self, state: State) -> Dict[str, Any]:
         """
         Evaluate section content and generate score
         """
         logging.info(f"Running writer validator for {state['section'].name} section")
-        section_content = state["section_content"]
 
         structured_llm = self.llm.with_structured_output(ValidatorOutput)
         chain = EVALUATE_CONTENT_PROMPT | structured_llm
 
-        try:
-            response = chain.invoke({
-                "section_content": section_content,
-                "name": state["section"].name,
-                "goal": state["section"].goal,
-                "documents": state["section"].documents,
-                "expected_format": state["section"].expected_format,
-            })
+        response = chain.invoke({
+            "section_content": state["section_content"],
+            "name": state["section"].name,
+            "goal": state["section"].goal,
+            "documents": state["section"].documents,
+            "expected_format": state["section"].expected_format,
+        })
 
-            if isinstance(response, ValidatorOutput):
-                evaluation_data = {
-                    "score": response.score,
-                    "improvements": response.improvements
-                    }
-            else:
-                response_data = response.model_dump()
-                evaluation_data = {
-                    "score": response_data.get("score"),
-                    "improvements": response_data.get("improvements")
-                    }
-
-            logging.info(f"Content evaluation for {state['section'].name} finished with a {evaluation_data['score']} score")
-            return {**evaluation_data, "revision_count": state["revision_count"] + 1}
-
-        except Exception as e:
+        if isinstance(response, ValidatorOutput):
             evaluation_data = {
-                    "score": 0.0,
-                    "improvements": []
-            }
-            logging.error(f"Failed to evaluate content for {state['section'].name} section: {e}")
-            return {**evaluation_data, "revision_count": state["revision_count"] + 1}
+                "score": response.score,
+                "improvements": response.improvements
+                }
+        else:
+            response_data = response.model_dump()
+            evaluation_data = {
+                "score": response_data.get("score"),
+                "improvements": response_data.get("improvements")
+                }
+
+        return {**evaluation_data, "revision_count": state["revision_count"] + 1}
 
     def _decide_next_step(self, state: State) -> Literal["end", "continue"]:
         """
