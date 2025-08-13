@@ -21,10 +21,10 @@ class PDFGenerator:
         Internal method to generate PDF bytes asynchronously
 
         Args:
-            title: str -> Report title
-            intro: str - > Report introduction
-            sections: List[dict] -> Report sections
-            conclusion: str -> Report conclusion
+            title (str): Report title
+            intro (str): Report introduction
+            sections (list): Report sections
+            conclusion (str): Report conclusion
         Returns:
             bytes: The generated PDF as bytes
         """
@@ -54,10 +54,10 @@ class PDFGenerator:
         Generate a PDF report and return the bytes.
 
         Args:
-            title: str -> The report title
-            intro: str -> Introduction text
-            sections: List[dict] -> List of sections, each with 'title' and 'content'
-            conclusion: str -> Conclusion text
+            title (str): The report title
+            intro (str): Introduction text
+            sections (list): List of sections, each with 'title' and 'content'
+            conclusion (str): Conclusion text
 
         Returns:
             bytes: The generated PDF as bytes

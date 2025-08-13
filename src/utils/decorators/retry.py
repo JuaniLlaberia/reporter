@@ -25,12 +25,12 @@ def retry_with_backoff(
     Decorator for retrying functions with exponential backoff and jitter.
 
     Args:
-        max_retries: Maximum number of retry attempts
-        retryable_exceptions: Tuple of exceptions that should trigger a retry
-        base_delay: Base delay in seconds for exponential backoff
-        exponential_base: Base for exponential calculation (delay = base_delay * base^attempt)
-        jitter: Whether to add random jitter to avoid thundering herd
-        logger: Logger instance to use (defaults to function's module logger)
+        max_retries (int): Maximum number of retry attempts
+        retryable_exceptions (tuple[Exceptions]): Tuple of exceptions that should trigger a retry
+        base_delay (float): Base delay in seconds for exponential backoff
+        exponential_base (float): Base for exponential calculation (delay = base_delay * base^attempt)
+        jitter (bool): Whether to add random jitter to avoid thundering herd
+        logger (Logger): Logger instance to use (defaults to function's module logger)
     """
     def decorator(func: Callable) -> Callable:
         @wraps(func)
