@@ -10,7 +10,7 @@ Guidelines:
 - Provide closure and leave the reader with a clear takeaway or final insight.
 - Keep the tone aligned with the rest of the report.
 - Avoid introducing completely new topics not mentioned in the content.
-- The length of the conclusion should be around 5%% of the total word count.
+- The length of the conclusion should be around 5%% of the total word count (don't include the number).
 
 Sections content:
 {content}
@@ -34,7 +34,7 @@ Guidelines:
   - State the purpose and scope of the content.
   - Highlight the key themes or insights without revealing all details.
   - Engage the reader and set expectations.
-  - The length of the introduction should be around 10%% of the total word count.
+  - The length of the introduction should be around 10%% of the total word count (don't include the number).
 
 Sections content:
 {content}
