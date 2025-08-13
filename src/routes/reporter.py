@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify
+import io
+from flask import Blueprint, request, jsonify, send_file
 from src.agents.orchestrator.orchestrator import Orchestrator
 
 reporter_bp = Blueprint("reporter", __name__)
@@ -6,6 +7,7 @@ reporter_bp = Blueprint("reporter", __name__)
 @reporter_bp.route("/generate-report", methods=["POST"])
 def generate_report():
     """
+    Route to generate report
     """
     if not request.is_json:
         return jsonify({"error": "Request must be JSON"}), 400
@@ -20,6 +22,11 @@ def generate_report():
     )
 
     prompt = request_json["prompt"]
-    orchestrator.run(prompt)
+    report_bytes = orchestrator.run(prompt)
 
-    return jsonify({"message": "Report was successfully created"}), 200
+    return send_file(
+        io.BytesIO(report_bytes),
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name="report.pdf"
+    )
