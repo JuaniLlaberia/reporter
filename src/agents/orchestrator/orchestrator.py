@@ -11,6 +11,7 @@ from .utils.prompts import PROCESS_PROMPT_PROMPT
 from src.agents.writer.models.content import SectionContent
 from src.agents.concluder.concluder import Concluder
 from src.utils.decorators.retry import retry_with_backoff
+from src.playwright.pdf_generator import PDFGenerator
 
 class State(TypedDict):
     prompt: str
@@ -27,6 +28,8 @@ class State(TypedDict):
     report_content: List[SectionContent]
     introduction: str
     conclusion: str
+
+    report_bytes: bytes
 
 class Orchestrator:
     def __init__(self, ollama_model: str,
@@ -54,17 +57,19 @@ class Orchestrator:
         graph.add_node("initial_retriever", self._initial_retriever)
         graph.add_node("planner", self._planner)
         graph.add_node("main_retriever", self._main_retriever)
-        graph.add_node("reporter", self._reporter)
+        graph.add_node("reporter", self._content_reporter)
+        graph.add_node("file_generator", self._report_file_generator)
 
         # Add edges
         graph.add_edge("process_prompt", "initial_retriever")
         graph.add_edge("initial_retriever", "planner")
         graph.add_edge("planner", "main_retriever")
         graph.add_edge("main_retriever", "reporter")
+        graph.add_edge("reporter", "file_generator")
 
         # Set up start and end of graphs
-        graph.set_entry_point("process_prompt")
-        graph.set_finish_point("reporter")
+        graph.set_entry_point("file_generator")
+        graph.set_finish_point("file_generator")
 
         return graph.compile()
 
@@ -152,7 +157,7 @@ class Orchestrator:
             "plan_sections": sections
         }
 
-    def _reporter(self, state: State) -> Dict[str, Any]:
+    def _content_reporter(self, state: State) -> Dict[str, Any]:
         """
         Generate title, introduction, content and conclusion for report
         """
@@ -165,8 +170,6 @@ class Orchestrator:
         )
         title, introduction, conclusion = concluder.run(content=report_content)
 
-        print("Intro", introduction)
-
         return {
             "title": title,
             "introduction": introduction,
@@ -174,7 +177,23 @@ class Orchestrator:
             "conclusion": conclusion
         }
 
-    def run(self, prompt: str):
+    def _report_file_generator(self, state: State) -> Dict[str, Any]:
+        """
+        Generates PDF bytes based on all the generated content
+        """
+        generator = PDFGenerator(format="A4")
+        pdf_bytes = generator.run(
+            title=state["title"],
+            intro=state["introduction"],
+            sections=state["report_content"],
+            conclusion=state["conclusion"]
+        )
+
+        return {
+            "report_bytes": pdf_bytes
+        }
+
+    def run(self, prompt: str) -> bytes:
         """
         Run orchestrator agent
         """
@@ -184,7 +203,14 @@ class Orchestrator:
             focus_keys=[],
             type=None,
             plan_queries=[],
-            plan_chunks=[]
+            plan_chunks=[],
+            plan_sections=[],
+            title="",
+            report_content=[],
+            introduction="",
+            conclusion="",
+            report_bytes=""
         )
 
-        self.graph.invoke(initial_state)
+        result = self.graph.invoke(initial_state)
+        return result["report_bytes"]
