@@ -63,6 +63,9 @@ REPORT_TEMPLATE = Template("""
             font-size: 10pt;
             color: gray;
         }
+        .page-break {
+            page-break-before: always;
+        }
     </style>
 </head>
 <body>
