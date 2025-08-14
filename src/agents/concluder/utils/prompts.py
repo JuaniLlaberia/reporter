@@ -10,7 +10,9 @@ Guidelines:
 - Provide closure and leave the reader with a clear takeaway or final insight.
 - Keep the tone aligned with the rest of the report.
 - Avoid introducing completely new topics not mentioned in the content.
-- The length of the conclusion should be around 5%% of the total word count (don't include the number).
+- The length of the conclusion must be between 1 and 2 paragraph.
+- Don't use markdown in the content.
+- Don't use placeholder (e.g. for company name)
 
 Sections content:
 {content}
@@ -34,7 +36,12 @@ Guidelines:
   - State the purpose and scope of the content.
   - Highlight the key themes or insights without revealing all details.
   - Engage the reader and set expectations.
-  - The length of the introduction should be around 10%% of the total word count (don't include the number).
+  - The length of the introduction must be between 2 and 3 paragraph.
+  - Don't repeat content and avoid incomplete sentences.
+
+Extra:
+- Don't use markdown in the content.
+- Don't use placeholder (e.g. for company name)
 
 Sections content:
 {content}

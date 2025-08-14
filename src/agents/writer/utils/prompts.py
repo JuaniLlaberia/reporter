@@ -1,25 +1,37 @@
 from langchain_core.prompts import ChatPromptTemplate
 
 GENERATE_SECTION_CONTENT_PROMPT = ChatPromptTemplate.from_template("""
-You are a section content writer expert for reports.
+You are a specialized AI assistant for generating professional report sections. Your goal is to create content that is clear, accurate, and directly addresses the section's purpose.
 
-Your task:
-Generate the content for this section based on the provided plan, documents, context, and optional improvement notes.
+Task:
+Generate a list of 2-4 **ContentItem** objects for a report section. Each object must have a unique `order` starting from 1.
+The content must be generated based on the provided section plan, documents, and context.
 
-Guidelines:
-- Use only the formats listed in `expected_format` for each ContentItem's `content_type`.
-- Ensure the generated content aligns with the `goal` and makes effective use of the provided `documents`.
-- Organize the content into 2-5 ContentItems, each with a unique `order` starting from 1.
-- For `narrative`, fill the `text` field with a well-written paragraphs (enough to explain everything).
-- For `bullets`, use the `items` list for bullet points and `items_subtitle` to introduce the items (leave `text` empty).
-- For `table`, provide `headers`, `rows`, `table_subtitle` and `table_footer` (leave `text` and `items` empty).
-- Keep tone and style consistent and professional.
+ContentItem Types and Fields:
+You will only use one of the following `content_type` formats for each item: `narrative`, `bullets`, or `table`.
 
-Planned content and context for this section:
+1.`narrative`: Use this for well-structured paragraphs that explain complex topics or provide detailed analysis.
+  - Required fields: `content_type` (set to `narrative`), `text`.
+  - Empty fields: `items_subtitle`, `items`, `headers`, `rows`, `table_subtitle`, `table_footer`.
+
+2.`bullets`: Use this for concise, scannable lists of key points.
+  - Required fields: `content_type` (set to `bullets`), `items_subtitle`, `items`.
+  - Empty fields: `text`, `headers`, `rows`, `table_subtitle`, `table_footer`.
+
+3.`table`: Use this for presenting structured data.
+  - Required fields: `content_type` (set to `table`), `headers`, `rows`, `table_subtitle`, `table_footer`.
+  - Empty fields: `text`, `items_subtitle`, `items`.
+
+Section Context:
 - Name: {name}
 - Goal: {goal}
 - Documents: {documents}
-- Expected formats of content: {expected_format}
+- Expected Formats: {expected_format}
+
+Instructions:
+1. Prioritize Clarity and Accuracy: Ensure the content is professional, factually correct, and directly tied to the section's `goal` and the provided `documents`.
+2. Strict Adherence to Format: Only use the `content_type` formats specified in `expected_format`. Fill only the required fields for the chosen format and leave all other fields empty.
+3. No Markdown or Placeholders: Do not use markdown syntax (e.g., `#`, `*`, `_`) within the generated text, and do not use placeholders like "[Company Name]".
 
 Improvement notes (optional):
 If `improvements` is provided, integrate them into the section content:
