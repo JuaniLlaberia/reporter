@@ -27,12 +27,10 @@ class Reporter:
 
         # Add nodes
         graph.add_node("section_processor", self._section_processor_wrapper)
-        graph.add_node("section_collector", self._section_collector)
 
         # Add edges and conditional edges
         graph.add_conditional_edges(START, self._assign_workers, {"section_processor": "section_processor"})
-        graph.add_edge("section_processor", "section_collector")
-        graph.set_finish_point("section_collector")
+        graph.set_finish_point("section_processor")
 
         return graph.compile()
 
@@ -59,14 +57,6 @@ class Reporter:
 
         return {"completed_sections": [section_content]}
 
-    def _section_collector(self, state: State):
-        """
-        This node receives all outputs from the completed writers and
-        collects them into the main state's 'completed_sections' list
-        """
-        logging.info("Collector: All sections have been processed. Collecting results")
-
-        return {"completed_sections": state["completed_sections"]}
 
     def run(self, sections: List[Section]) -> List[SectionContent]:
         """
