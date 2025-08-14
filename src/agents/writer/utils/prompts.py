@@ -11,8 +11,8 @@ Guidelines:
 - Ensure the generated content aligns with the `goal` and makes effective use of the provided `documents`.
 - Organize the content into 2-5 ContentItems, each with a unique `order` starting from 1.
 - For `narrative`, fill the `text` field with a well-written paragraphs (enough to explain everything).
-- For `bullets`, use the `items` list for bullet points (leave `text` empty).
-- For `table`, provide `headers` and `rows` (leave `text` and `items` empty).
+- For `bullets`, use the `items` list for bullet points and `items_subtitle` to introduce the items (leave `text` empty).
+- For `table`, provide `headers`, `rows`, `table_subtitle` and `table_footer` (leave `text` and `items` empty).
 - Keep tone and style consistent and professional.
 
 Planned content and context for this section:
