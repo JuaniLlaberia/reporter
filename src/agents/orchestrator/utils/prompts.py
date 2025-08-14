@@ -7,7 +7,7 @@ The user prompt aims to create a report so we need to extract the key aspects.
 Information to extract:
 - topic: The main topic of the report.
 - focus_keys: The list of sub-topics that we want to report to be focus on.
-- type: The report type following the enum.
+- type: The report type following the enum ('detailed' or 'summary').
 - plan_queries: Provide 10 queries to retrieve information from a vectorDB to have the main idea of what we need.
 
 Prompt: {prompt}
