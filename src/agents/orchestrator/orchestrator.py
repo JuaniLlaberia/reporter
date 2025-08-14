@@ -68,7 +68,7 @@ class Orchestrator:
         graph.add_edge("reporter", "file_generator")
 
         # Set up start and end of graphs
-        graph.set_entry_point("file_generator")
+        graph.set_entry_point("process_prompt")
         graph.set_finish_point("file_generator")
 
         return graph.compile()

@@ -44,7 +44,7 @@ class Reporter:
 
         return [Send("section_processor", {
             "section": s,
-            "section_content": SectionContent(section_title="", content=[]),
+            "section_content": SectionContent(section_title="", section_content=[]),
             "score": 0.0,
             "improvements": [],
             "revision_count": 0

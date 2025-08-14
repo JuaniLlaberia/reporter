@@ -51,13 +51,17 @@ REPORT_TEMPLATE = Template("""
             margin-top: 0.5em;
         }
         th, td {
-            border: 1px solid #ccc;
+            border: 0.5px solid #ccc;
             padding: 8px;
             text-align: left;
             font-size: 10pt;
         }
         th {
-            background-color: #f2f2f2;
+            background-color: #e3e1e1;
+        }
+        .comment {
+            font-size: 10pt;
+            color: gray;
         }
     </style>
 </head>
@@ -70,18 +74,20 @@ REPORT_TEMPLATE = Template("""
     {% for section in sections %}
     <div {% if loop.index % 2 == 0 %}class="page-break"{% endif %}>
         <h2>{{ section.section_title }}</h2>
-        {% for content_item in section.content %}
+        {% for content_item in section.section_content %}
             {% if content_item.content_type == "narrative" %}
                 {% for paragraph in content_item.text.split("\\n") %}
                 <p>{{ paragraph }}</p>
                 {% endfor %}
             {% elif content_item.content_type == "bullets" %}
+                <h4>{{ content_item.items_subtitle }}</h4>
                 <ul>
                 {% for item in content_item['items'] %}
                     <li>{{ item }}</li>
                 {% endfor %}
                 </ul>
             {% elif content_item.content_type == "table" %}
+                <h4>{{ content_item.table_subtitle }}</h4>
                 <table>
                     <thead>
                         <tr>
@@ -100,6 +106,7 @@ REPORT_TEMPLATE = Template("""
                     {% endfor %}
                     </tbody>
                 </table>
+                <p class="comment">{{ content_item.table_footer }}</p>
             {% endif %}
         {% endfor %}
     </div>
