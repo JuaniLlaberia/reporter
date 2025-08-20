@@ -1,0 +1,8 @@
+pydantic
+flask
+langgraph
+langchain_core
+langchain_ollama
+chromadb
+python-dotenv
+playwright
