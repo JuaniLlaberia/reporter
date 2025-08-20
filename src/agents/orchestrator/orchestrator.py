@@ -163,9 +163,6 @@ class Orchestrator:
             section.documents = docs
             section.image_url = imgs
 
-        print("RETRIEVED SECTIONS")
-        print(sections)
-
         return {
             "plan_sections": sections
         }

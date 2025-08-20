@@ -74,19 +74,28 @@ class Writter:
                 "goal": state["section"].goal,
                 "documents": state["section"].documents,
                 "expected_format": state["section"].expected_format,
+                "img_query": state["section"].img_query,
                 "improvements": state["improvements"]
             })
 
         if isinstance(response, WriterOutput):
             content_data = {
                 "section_title": response.section_title,
-                "section_content": response.section_content
+                "section_content": response.section_content,
+                "image_content": {
+                    "imgage_url": state["section"].image_url,
+                    "image_footer": response.image_footer
+                }
                 }
         else:
             response_data = response.model_dump()
             content_data = {
                 "section_title": response_data.get("section_title"),
-                "section_content": response_data.get("section_content")
+                "section_content": response_data.get("section_content"),
+                "image_content": {
+                    "imgage_url": state["section"].image_url,
+                    "image_footer": response_data.get("image_footer")
+                }
                 }
 
         return {"section_content": content_data}
