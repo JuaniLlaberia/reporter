@@ -22,6 +22,8 @@ You will only use one of the following `content_type` formats for each item: `na
   - Required fields: `content_type` (set to `table`), `headers`, `rows`, `table_subtitle`, `table_footer`.
   - Empty fields: `text`, `items_subtitle`, `items`.
 
+4. Extra: In case we have an `img_query` ({img_query}), create a footer for the image as `image_footer`.
+
 Section Context:
 - Name: {name}
 - Goal: {goal}

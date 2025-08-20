@@ -12,6 +12,11 @@ class ContentItem(BaseModel):
     table_subtitle: str = ""
     table_footer: str = ""
 
+class ImageContent(BaseModel):
+    image_url: str
+    image_footer: str
+
 class SectionContent(BaseModel):
     section_title: str
     section_content: List[ContentItem]
+    image_content: ImageContent

@@ -3,16 +3,23 @@ from langchain_core.prompts import ChatPromptTemplate
 GENERATE_PLAN_PROMPT = ChatPromptTemplate.from_template("""
 You are a report planning expert. Your task is to generate a set of sections for the report.
 
-Each section will contain:
+Each section will contain (All this fields must be present):
 - name: A short, descriptive title for the section.
 - expected_format: A list of one or more formats from ["narrative", "bullets", "table"].
 - goal: A clear, concise statement describing the purpose of the section — what insight or message it should deliver to the reader.
 - queries: Exactly 5 well-phrased, diverse search queries to retrieve information from a vector database for this section.
+- img_query: 1 well-phrased query to retrieve an image (searching its description) from a vector database for this section.
 
 Guidelines for queries:
 - Rephrase and vary them to avoid duplicates.
 - Include key entities, metrics, or constraints where relevant.
 - Cover different perspectives for completeness.
+
+Guidelines for image query:
+- Specify visual attributes.
+- Clearly state what the image should convey. Is it meant to "visualize growth," "represent a strategic concept," or "show a product's interface"?
+- Reference key entities and actions: Name the main subjects and the actions they are performing (e.g., scaling, connecting, analyzing).
+- Avoid generic terms: Be as specific as possible. Instead of "chart," use "bar chart" or "pie chart." Instead of "strategy," use "conceptual roadmap" or "strategic pillars."
 
 Report context:
 - Topic: {topic}

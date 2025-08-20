@@ -3,7 +3,7 @@ from langchain_ollama import ChatOllama
 from pydantic import BaseModel
 from langgraph.graph import StateGraph
 from src.agents.reporter.reporter import Reporter
-from src.agents.retriever.retriever import Retriever
+from src.agents.retriever.retriever import Retriever, Mode, ContentType
 from src.agents.planner.planner import Planner
 from src.agents.planner.models.output import Section
 from .models.output import ReportType, OrchestratorOutput
@@ -116,8 +116,8 @@ class Orchestrator:
         """
         plan_queries = state["plan_queries"]
 
-        retriever = Retriever(collection="documents", mode="single")
-        docs = retriever.run(queries=plan_queries, sections=[])["default"]
+        retriever = Retriever(collection="documents", images_collection=None, mode=Mode.SINGLE)
+        docs = retriever.run(queries=plan_queries, sections=[])["documents"]["default"]
 
         plan_chunks = [doc["content"] for doc in docs]
         return {
@@ -147,11 +147,21 @@ class Orchestrator:
         """
         sections = state["plan_sections"].copy()
 
-        retriever = Retriever(collection="documents", mode="sectioned")
-        docs = retriever.run(sections=sections, queries=[])
+        retriever = Retriever(collection="documents",
+                              images_collection="images",
+                              mode=Mode.SECTIONED)
+
+        result = retriever.run(
+            sections=sections,
+            content_type=ContentType.BOTH
+        )
 
         for section in sections:
-            section.documents = docs.get(section.name, [])
+            docs = [doc["content"] for doc in result["documents"].get(section.name, [])]
+            imgs = [img["image_url"] for img in result["images"].get(section.name, [])]
+
+            section.documents = docs
+            section.image_url = imgs
 
         return {
             "plan_sections": sections

@@ -112,6 +112,12 @@ REPORT_TEMPLATE = Template("""
                 <p class="comment">{{ content_item.table_footer }}</p>
             {% endif %}
         {% endfor %}
+        {% if section.image_content and section.image_content.image_url %}
+            <img src="{{ section.image_content.image_url }}" alt="Section Image" style="max-width:100%;margin:10px 0;" />
+            {% if section.image_content.image_footer %}
+                <p class="comment">{{ section.image_content.image_footer }}</p>
+            {% endif %}
+        {% endif %}
     </div>
     {% endfor %}
 
