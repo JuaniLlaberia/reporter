@@ -1,14 +1,20 @@
-# 📄 Document Ingestion Service
+# 📰 Reporter – Multi-Agent Report Generator
 
-This repository contains the **document ingestion pipeline**, responsible for processing documents, extracting structured content and images, generating embeddings, and storing everything in **ChromaDB**.
+This repository contains the **Reporter**, a multi-agent system that generates structured reports using ingested documents from **ChromaDB**.
 
+The system orchestrates multiple agents working together:
+- **Orchestrator** – coordinates the workflow.  
+- **Retriever** – fetches relevant context from ChromaDB.  
+- **Planner** – structures the report outline.  
+- **Reporter & Writer** – drafts sections of the report.  
+- **Concluder** – validates and finalizes the output.
+  
 <br>
 
 ## 🚀 Features
-- Document parsing with [docling](https://github.com/docling).
-- Extraction of text, tables, and images.
-- Chunking & embeddings generation.
-- Automatic ingestion into the ChromaDB instance.
+- Multi-agent collaboration for high-quality report generation.  
+- Context retrieval from **ChromaDB**.  
+- Validation & structured report outputs. 
 
 <br>
 
@@ -17,8 +23,8 @@ Note: Ensure [ChromaDB](https://github.com/JuaniLlaberia/chroma_db) is running l
 
 1. Clone the repo:
    ```bash
-   git clone https://github.com/your-org/document-ingestion.git
-   cd document-ingestion
+   git clone https://github.com/your-org/reporter.git
+   cd reporter
    ```
 2. Install dependencies:
    ```bash
@@ -34,7 +40,7 @@ Note: Ensure [ChromaDB](https://github.com/JuaniLlaberia/chroma_db) is running l
 
 # 🔗 Related Repositories
 - [chromadb-service](https://github.com/JuaniLlaberia/chroma_db) → Vector database backend.
-- [reporter](https://github.com/JuaniLlaberia/reporter) → Uses ChromaDB data for multi-agent report generation.
+- [document-ingestion](https://github.com/JuaniLlaberia/document-ingestion) → Extracts and ingests documents into ChromaDB.
 
 <br>
 
